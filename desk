@@ -38,6 +38,8 @@ Usage:
     $PROGRAM edit [desk-name]
         Edit (or create) a deskfile with the name specified, otherwise
         edit the active deskfile.
+    $PROGRAM shell
+        Echo the name of the current shell.
     $PROGRAM help
         Show this text.
     $PROGRAM version
@@ -68,6 +70,7 @@ cmd_init() {
         bash)   local SHELLRC="${HOME}/.bashrc" ;;
         fish)   local SHELLRC="${HOME}/.config/fish/config.fish" ;;
         zsh)    local SHELLRC="${HOME}/.zshrc" ;;
+        nu) local SHELLRC="${HOME}/.config/nushell/config.nu" ;;
     esac
 
     read -p "Where's your shell rc file? (default: ${SHELLRC}): " \
@@ -86,6 +89,8 @@ cmd_init() {
     # sets exit status to 1. That, however, is part of desk's normal
     # operation, so we clear exit status after that.
     if [ "$SHELLTYPE" == "fish" ]; then
+      echo "test -n \"\$DESK_ENV\"; and . \"\$DESK_ENV\"; or true" >> "$USER_SHELLRC"
+    elif [ "$SHELLTYPE" == "nu" ]; then
       echo "test -n \"\$DESK_ENV\"; and . \"\$DESK_ENV\"; or true" >> "$USER_SHELLRC"
     else
       echo "[ -n \"\$DESK_ENV\" ] && source \"\$DESK_ENV\" || true" >> "$USER_SHELLRC"
@@ -259,6 +264,10 @@ cmd_edit() {
     ${EDITOR:-vi} "$EDIT_PATH"
 }
 
+cmd_shell() {
+    echo "$(get_running_shell)"
+}
+
 ## Utilities
 
 FNAME_CHARS='[a-zA-Z0-9_-]'
@@ -307,10 +316,12 @@ get_running_shell() {
     exit
 }
 
-# Echo the extension of recognized deskfiles (.fish for fish)
+# Echo the extension of recognized deskfiles
 get_deskfile_extension() {
     if [ "$(get_running_shell)" == "fish" ]; then
         echo '.fish'
+    elif [ "$(get_running_shell)" == "nu" ]; then
+        echo '.nu'
     else
         echo '.sh'
     fi
@@ -335,6 +346,7 @@ case "$1" in
     go|.) shift;               cmd_go "$@" ;;
     run) shift;                cmd_run "$@" ;;
     edit) shift;               cmd_edit "$@" ;;
+    shell) shift;              cmd_shell "$@" ;;
     *)                         cmd_current "$@" ;;
 esac
 exit 0
